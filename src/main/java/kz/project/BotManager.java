@@ -5,6 +5,7 @@ import kz.project.dto.BotLoginRequest;
 import kz.project.dto.MyCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -14,6 +15,9 @@ import java.util.stream.Collectors;
 @Service
 public class BotManager {
     private static final Logger log = LoggerFactory.getLogger(BotManager.class);
+
+    @Value("${bot.visible:false}")
+    private boolean visible;
 
     public Map<String, String> loginAndGetCookies(BotLoginRequest req) {
         log.info("Попытка логина через {}", req.botType());
@@ -31,7 +35,7 @@ public class BotManager {
     private BasicDriverBot createBot(BotLoginRequest r) {
         MyCredentials creds = new MyCredentials(r.login(), r.password());
         return switch (r.botType()) {
-            case GUNZ -> new GunzBot(creds, r.url(), false);
+            case GUNZ -> new GunzBot(creds, r.url(), visible);
         };
     }
 }
