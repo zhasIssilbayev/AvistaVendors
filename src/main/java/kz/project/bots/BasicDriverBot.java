@@ -1,8 +1,11 @@
 package kz.project.bots;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
+import kz.project.configuration.BotProperties;
 import kz.project.dto.MyCredentials;
+import kz.project.exception.LoginFailedException;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -19,22 +22,22 @@ import java.util.Set;
 public abstract class BasicDriverBot implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(BasicDriverBot.class);
 
-    protected static long STANDARD_WAIT_DURATION = 8;
+    protected static long STANDARD_WAIT_DURATION = 6;
     protected static final Path PROFILE_DIR = Paths.get(System.getenv("LOCALAPPDATA") +
             "\\Google\\Chrome\\User Data\\SeleniumProfile");
 
     protected final MyCredentials credentials;
     protected final String urlPath;
-    protected final boolean visible;
+    protected BotProperties botProperties;
 
     protected WebDriver driver;
     protected WebDriverWait wait;
     protected boolean loggedIn;
 
-    protected BasicDriverBot(MyCredentials credentials, String urlPath, boolean visible) {
+    protected BasicDriverBot(MyCredentials credentials, String urlPath, BotProperties botProperties) {
         this.credentials = credentials;
         this.urlPath = urlPath;
-        this.visible = visible;
+        this.botProperties = botProperties;
     }
 
     public void setupDriver() {
@@ -43,11 +46,12 @@ public abstract class BasicDriverBot implements Closeable {
             ChromeOptions options = new ChromeOptions();
             String userDirectory = "User_" + credentials.login().replaceAll("[^a-zA-Z0-9]", "");
             options.addArguments("user-data-dir=" + PROFILE_DIR.resolve(userDirectory));
-            if (!visible) {
+            if (!botProperties.isVisible()) {
                 options.addArguments("--headless=new", "--disable-gpu", "--disable-extensions");
             }
             options.addArguments("--window-size=1920,1080");
             driver = new ChromeDriver(options);
+			driver.manage().window().setSize(new Dimension(1920, 1080));
             wait = new WebDriverWait(driver, Duration.ofSeconds(STANDARD_WAIT_DURATION));
             log.info("Драйвер успешно инициализирован.");
         } catch (Exception e) {
@@ -56,7 +60,7 @@ public abstract class BasicDriverBot implements Closeable {
         }
     }
 
-    public abstract void login();
+    public abstract void login() throws LoginFailedException;
 
     @Override
     public void close() {

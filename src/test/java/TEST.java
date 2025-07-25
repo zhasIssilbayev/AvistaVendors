@@ -1,6 +1,7 @@
 import kz.project.BotManager;
 import kz.project.bots.BotTypes;
 import kz.project.dto.BotLoginRequest;
+import kz.project.exception.LoginFailedException;
 
 import java.util.Map;
 
@@ -11,7 +12,12 @@ public class TEST {
         String url = "https://www.gunz.cc/ru";
 
         BotManager manager = new BotManager();
-        Map<String, String> cookies = manager.loginAndGetCookies(new BotLoginRequest(BotTypes.GUNZ, login, password, url));
+        Map<String, String> cookies = null;
+        try {
+            cookies = manager.loginAndGetCookies(new BotLoginRequest(BotTypes.GUNZ, login, password, url));
+        } catch (LoginFailedException e) {
+            System.out.println("Авторизация не выполнена.");
+        }
 
         System.out.println("Cookies:");
         cookies.forEach((k, v) -> System.out.println(k + " = " + v));

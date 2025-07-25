@@ -1,22 +1,30 @@
 package kz.project.bots;
 
+import kz.project.configuration.BotProperties;
 import kz.project.dto.MyCredentials;
+import kz.project.exception.LoginFailedException;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import java.time.Duration;
 
 public class GunzBot extends BasicDriverBot {
     private static final Logger log = LoggerFactory.getLogger(GunzBot.class);
 
-    public GunzBot(MyCredentials credentials, String urlPath, boolean visible) {
-        super(credentials, urlPath, visible);
+    public GunzBot(MyCredentials credentials, String urlPath, BotProperties botProperties) {
+        super(credentials, urlPath, botProperties);
     }
 
     @Override
-    public void login() {
+    public void login() throws LoginFailedException {
         driver.get(urlPath);
         acceptCookiesIfPresent();
 
@@ -28,6 +36,16 @@ public class GunzBot extends BasicDriverBot {
 
         openLoginPopup();
         fillCredentialsAndSubmit();
+
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+            wait.until(d -> isLoginErrorVisible());
+
+            throw new LoginFailedException("Неверный логин или пароль.");
+        } catch (TimeoutException ignored) {
+            // Ошибка входа не появилась — всё хорошо, продолжаем
+        }
+
         wait.until(d -> successfullyLoggedIn());
         loggedIn = true;
         log.info("Успешная авторизация.");
@@ -36,7 +54,7 @@ public class GunzBot extends BasicDriverBot {
     private void acceptCookiesIfPresent() {
         try {
             By cookiePopup = By.id("consent_management_popup__content_wrapper");
-            wait.withTimeout(Duration.ofSeconds(5))
+            wait.withTimeout(Duration.ofSeconds(4))
                     .until(ExpectedConditions.presenceOfElementLocated(cookiePopup));
             driver.findElement(By.cssSelector("a.ip_button__accept_cookies")).click();
             wait.until(ExpectedConditions.invisibilityOfElementLocated(cookiePopup));
@@ -48,6 +66,12 @@ public class GunzBot extends BasicDriverBot {
         }
     }
 
+    private boolean isLoginErrorVisible() {
+        WebElement loginDiv = driver.findElement(By.id("fF__error__password"));
+        String classes = loginDiv.getAttribute("class");
+        return classes != null && classes.contains("ipfit__field_error");
+    }
+
     private boolean successfullyLoggedIn() {
         WebElement loginDiv = driver.findElement(By.id("login"));
         String classes = loginDiv.getAttribute("class");
@@ -55,6 +79,16 @@ public class GunzBot extends BasicDriverBot {
     }
 
     private void openLoginPopup() {
+        if (botProperties.isDebug()) {
+            try {
+                File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+                Files.copy(screenshot.toPath(), Paths.get("debug.png"), StandardCopyOption.REPLACE_EXISTING);
+                log.info("Скриншот сохранён в debug.png");
+            } catch (Exception e) {
+                log.warn("Не удалось сохранить скриншот", e);
+            }
+        }
+
         By loginButton = By.xpath("//div[@id='login']/a[contains(@href, '/formular/login')]");
         wait.until(ExpectedConditions.elementToBeClickable(loginButton)).click();
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login_popup")));
