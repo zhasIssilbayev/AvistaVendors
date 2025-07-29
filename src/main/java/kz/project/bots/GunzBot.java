@@ -21,6 +21,7 @@ public class GunzBot extends BasicDriverBot {
 
     public GunzBot(MyCredentials credentials, String urlPath, BotProperties botProperties) {
         super(credentials, urlPath, botProperties);
+        this.standardWaitDuration = botProperties.getGunzWait();
     }
 
     @Override
@@ -38,7 +39,7 @@ public class GunzBot extends BasicDriverBot {
         fillCredentialsAndSubmit();
 
         try {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(Math.max(2, standardWaitDuration / 3)));
             wait.until(d -> isLoginErrorVisible());
 
             throw new LoginFailedException("Неверный логин или пароль.");
@@ -54,15 +55,12 @@ public class GunzBot extends BasicDriverBot {
     private void acceptCookiesIfPresent() {
         try {
             By cookiePopup = By.id("consent_management_popup__content_wrapper");
-            wait.withTimeout(Duration.ofSeconds(4))
-                    .until(ExpectedConditions.presenceOfElementLocated(cookiePopup));
+            wait.until(ExpectedConditions.presenceOfElementLocated(cookiePopup));
             driver.findElement(By.cssSelector("a.ip_button__accept_cookies")).click();
             wait.until(ExpectedConditions.invisibilityOfElementLocated(cookiePopup));
             log.info("Куки приняты.");
         } catch (TimeoutException ignored) {
             log.info("Окно куки не появилось — пропущено.");
-        } finally {
-            wait.withTimeout(Duration.ofSeconds(STANDARD_WAIT_DURATION));
         }
     }
 

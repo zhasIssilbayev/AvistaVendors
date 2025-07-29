@@ -22,7 +22,6 @@ import java.util.Set;
 public abstract class BasicDriverBot implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(BasicDriverBot.class);
 
-    protected static long STANDARD_WAIT_DURATION = 6;
     protected static final Path PROFILE_DIR = Paths.get(System.getenv("LOCALAPPDATA") +
             "\\Google\\Chrome\\User Data\\SeleniumProfile");
 
@@ -30,7 +29,8 @@ public abstract class BasicDriverBot implements Closeable {
     protected final String urlPath;
     protected BotProperties botProperties;
 
-    protected WebDriver driver;
+    protected long standardWaitDuration;
+    protected ChromeDriver driver;
     protected WebDriverWait wait;
     protected boolean loggedIn;
 
@@ -52,7 +52,7 @@ public abstract class BasicDriverBot implements Closeable {
             options.addArguments("--window-size=1920,1080");
             driver = new ChromeDriver(options);
 			driver.manage().window().setSize(new Dimension(1920, 1080));
-            wait = new WebDriverWait(driver, Duration.ofSeconds(STANDARD_WAIT_DURATION));
+            wait = new WebDriverWait(driver, Duration.ofSeconds(standardWaitDuration));
             log.info("Драйвер успешно инициализирован.");
         } catch (Exception e) {
             log.error("Ошибка при настройке драйвера", e);

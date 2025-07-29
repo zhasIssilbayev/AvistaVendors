@@ -40,6 +40,7 @@ public class BotManager {
         MyCredentials creds = new MyCredentials(r.login(), r.password());
         return switch (r.botType()) {
             case GUNZ -> new GunzBot(creds, r.url(), botProperties);
+            case OAZA -> new OazaBot(creds, r.url(), botProperties);
         };
     }
 }
