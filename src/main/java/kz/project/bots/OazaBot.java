@@ -1,26 +1,38 @@
 package kz.project.bots;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import kz.project.configuration.BotProperties;
 import kz.project.dto.MyCredentials;
 import kz.project.exception.LoginFailedException;
 import org.openqa.selenium.*;
+import org.openqa.selenium.devtools.DevTools;
+import org.openqa.selenium.devtools.v138.network.Network;
+import org.openqa.selenium.devtools.v138.network.model.RequestId;
+import org.openqa.selenium.devtools.v138.network.model.Response;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.*;
+import java.util.Optional;
 
 public class OazaBot extends BasicDriverBot{
     private static final Logger log = LoggerFactory.getLogger(OazaBot.class);
 
-    private Queue<String> tokenResponseBody;
+    private Queue<String> tokenResponseBodies;
 
     public OazaBot(MyCredentials credentials, String urlPath, BotProperties botProperties) {
         super(credentials, urlPath, botProperties);
         this.standardWaitDuration = botProperties.getOazaWait();
-        this.tokenResponseBody = new ArrayDeque<>();
+        this.tokenResponseBodies = new ArrayDeque<>();
     }
 
     @Override
@@ -28,6 +40,33 @@ public class OazaBot extends BasicDriverBot{
         super.setupDriver();
 
         try {
+            // CDP-сессия
+            DevTools devTools = driver.getDevTools();
+            devTools.createSession();
+
+            // Включаем сеть
+            devTools.send(Network.enable(
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.of(true)
+            ));
+
+            // Слушаем ответы
+            devTools.addListener(Network.responseReceived(), response -> {
+                Response res = response.getResponse();
+                String url = res.getUrl();
+
+                // Проверяем, что это нужный URL
+                if (url.endsWith("/token") && res.getStatus() == 200) {
+                    RequestId requestId = response.getRequestId();
+
+                    // Загружаем тело ответа
+                    Network.GetResponseBodyResponse body = devTools.send(Network.getResponseBody(requestId));
+                    String bodyData = body.getBody();
+                    tokenResponseBodies.add(bodyData);
+                }
+            });
 
             log.info("Драйвер успешно до настроен OAZA.");
         } catch (Exception e) {
@@ -54,6 +93,16 @@ public class OazaBot extends BasicDriverBot{
             log.info("По куки уже залогинены — вход не требуется.");
             loggedIn = true;
             return;
+        }
+
+        if (botProperties.isDebug()) {
+            try {
+                File screenshot = (driver).getScreenshotAs(OutputType.FILE);
+                Files.copy(screenshot.toPath(), Paths.get("debug.png"), StandardCopyOption.REPLACE_EXISTING);
+                log.info("Скриншот сохранён в debug.png");
+            } catch (Exception e) {
+                log.warn("Не удалось сохранить скриншот", e);
+            }
         }
 
         fillCredentialsAndSubmit();
@@ -100,7 +149,15 @@ public class OazaBot extends BasicDriverBot{
         logIN.click();
     }
 
-    public String getTokenResponseBody() {
-        return tokenResponseBody.poll();
+    public Map<String, String> getTokenResponseBodies() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonString = tokenResponseBodies.peek();
+        Map<String, String> map;
+        try {
+            map = objectMapper.readValue(jsonString, new TypeReference<>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return map;
     }
 }

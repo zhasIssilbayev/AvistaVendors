@@ -43,4 +43,18 @@ public class BotManager {
             case OAZA -> new OazaBot(creds, r.url(), botProperties);
         };
     }
+
+    public Map<String, String> createGetToken(BotLoginRequest req) throws LoginFailedException {
+        log.info("Попытка логина через {}", req.botType());
+        try (BasicDriverBot bot = createBot(req)) {
+            bot.setupDriver();
+            bot.login();
+            return bot.getTokenResponseBodies();
+        } catch (LoginFailedException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Ошибка при работе с ботом", e);
+            throw new RuntimeException("Bot login failed: " + e.getMessage(), e);
+        }
+    }
 }

@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import java.time.Duration;
+import java.util.Map;
 
 public class GunzBot extends BasicDriverBot {
     private static final Logger log = LoggerFactory.getLogger(GunzBot.class);
@@ -52,6 +53,11 @@ public class GunzBot extends BasicDriverBot {
         log.info("Успешная авторизация.");
     }
 
+    @Override
+    public Map<String, String> getTokenResponseBodies() {
+        throw new UnsupportedOperationException("Unsupported method for this bot.");
+    }
+
     private void acceptCookiesIfPresent() {
         try {
             By cookiePopup = By.id("consent_management_popup__content_wrapper");
@@ -79,7 +85,7 @@ public class GunzBot extends BasicDriverBot {
     private void openLoginPopup() {
         if (botProperties.isDebug()) {
             try {
-                File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+                File screenshot = (driver).getScreenshotAs(OutputType.FILE);
                 Files.copy(screenshot.toPath(), Paths.get("debug.png"), StandardCopyOption.REPLACE_EXISTING);
                 log.info("Скриншот сохранён в debug.png");
             } catch (Exception e) {

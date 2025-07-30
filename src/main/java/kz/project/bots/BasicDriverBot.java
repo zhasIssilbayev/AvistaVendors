@@ -1,12 +1,10 @@
 package kz.project.bots;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
 import kz.project.configuration.BotProperties;
 import kz.project.dto.MyCredentials;
 import kz.project.exception.LoginFailedException;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.Dimension;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -17,13 +15,14 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class BasicDriverBot implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(BasicDriverBot.class);
 
     protected static final Path PROFILE_DIR = Paths.get(System.getenv("LOCALAPPDATA") +
-            "\\Google\\Chrome\\User Data\\SeleniumProfile");
+            "\\Google\\chromium");
 
     protected final MyCredentials credentials;
     protected final String urlPath;
@@ -42,8 +41,12 @@ public abstract class BasicDriverBot implements Closeable {
 
     public void setupDriver() {
         try {
-            WebDriverManager.chromedriver().setup();
             ChromeOptions options = new ChromeOptions();
+            // Использование собственного браузера,
+            Path currentDir = Paths.get("").toAbsolutePath();
+            String chromeBinaryPath = currentDir.resolve("chrome-win").resolve("chrome.exe").toString();
+            options.setBinary(chromeBinaryPath);
+
             String userDirectory = "User_" + credentials.login().replaceAll("[^a-zA-Z0-9]", "");
             options.addArguments("user-data-dir=" + PROFILE_DIR.resolve(userDirectory));
             if (!botProperties.isVisible()) {
@@ -82,4 +85,6 @@ public abstract class BasicDriverBot implements Closeable {
             throw new RuntimeException("Не удалось получить cookies", e);
         }
     }
+
+    public abstract Map<String, String> getTokenResponseBodies();
 }
