@@ -8,8 +8,9 @@ server.port=8085
 logging.level.org.springframework=INFO
 
 # Set the waiting time for page loading
-# bot.gunz.wait=5
-# bot.oaza.wait=8
+# bot.gunzWait=5
+bot.oazaWait=7
+#bot.chromePath=D:\\Repositories\\AvistaVendors\\chrome-win\\chrome.exe
 
 # DEBUG
 bot.visible=false

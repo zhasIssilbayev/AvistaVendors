@@ -43,8 +43,13 @@ public abstract class BasicDriverBot implements Closeable {
         try {
             ChromeOptions options = new ChromeOptions();
             // Использование собственного браузера,
-            Path currentDir = Paths.get("").toAbsolutePath();
-            String chromeBinaryPath = currentDir.resolve("chrome-win").resolve("chrome.exe").toString();
+            String chromeBinaryPath;
+            if (botProperties.getChromePath() == null || botProperties.getChromePath().isEmpty()) {
+                Path currentDir = Paths.get("").toAbsolutePath();
+                chromeBinaryPath = currentDir.resolve("chrome-win").resolve("chrome.exe").toString();
+            } else {
+                chromeBinaryPath = botProperties.getChromePath();
+            }
             options.setBinary(chromeBinaryPath);
 
             String userDirectory = "User_" + credentials.login().replaceAll("[^a-zA-Z0-9]", "");
