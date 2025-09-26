@@ -128,7 +128,7 @@ public class OazaBot extends BasicDriverBot{
     }
 
     private boolean successfullyLoggedIn() {
-        return driver.getTitle().equalsIgnoreCase("eH One");
+        return driver.getTitle().toLowerCase().startsWith("eH One".toLowerCase());
     }
 
     private void fillCredentialsAndSubmit() {
