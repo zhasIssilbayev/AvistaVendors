@@ -8,4 +8,6 @@ bot.chromePath=D:\\Repositories\\AvistaVendors\\chrome-win\\chrome.exe
 
 
 Chek [application-example.properties](src/main/resources/application-example_properties)
+
 Before building the project, copy it to the same directory named application.properties. Then fill in the necessary settings.
+
